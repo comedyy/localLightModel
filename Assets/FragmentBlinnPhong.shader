@@ -1,8 +1,10 @@
-Shader "Unlit/NewUnlitShader"
+Shader "Unlit/FragmentBlinnPhong"
 {
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        _Embient ("Color", Color) = (0.1, 0.1, 0.1, 1)
+        _DiffuseColor ("DiffuseColor", Color) = (0.1, 0.1, 0.1, 1)
     }
     SubShader
     {
@@ -28,31 +30,37 @@ Shader "Unlit/NewUnlitShader"
             struct v2f
             {
                 float4 a : SV_POSITION;
-                fixed3 luminance:TEXCOORD0;
-                fixed3 bb:TEXCOORD1;
+                fixed3 lightDir:TEXCOORD0;
+                fixed3 viewDir:TEXCOORD1;
+                fixed3 normal:TEXCOORD2;
             };
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
+            float4 _Embient;
+            float4 _DiffuseColor;
 
             v2f vert (appdata v)
             {
                 v2f o;
                 o.a = UnityObjectToClipPos(v.vertex);
                 float3 lightDir = normalize(ObjSpaceLightDir(v.vertex));
-                float luminance = dot(v.normal, lightDir);
-                o.luminance = luminance;
-                float3 reflectDir = 2 * dot(lightDir, v.normal) * v.normal - lightDir;
                 float3 viewDir = normalize(ObjSpaceViewDir(v.vertex));
-                float x = pow(dot(reflectDir, viewDir), 3);
-                o.bb = x;
+
+                o.lightDir = lightDir;
+                o.viewDir = viewDir;
+                o.normal = v.normal;
 
                 return o;
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
-                return float4(i.luminance + i.bb, 1);
+                float4 diffuse = _DiffuseColor * dot(i.normal, i.lightDir);
+                float3 h = normalize(i.viewDir + i.lightDir);
+                float specular = pow(dot(h, i.normal), 200);
+
+                return diffuse + _Embient + specular; 
             }
             ENDCG
         }
