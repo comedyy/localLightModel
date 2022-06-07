@@ -3,8 +3,9 @@ Shader "Unlit/FragmentBlinnPhong"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
-        _Embient ("Color", Color) = (0.1, 0.1, 0.1, 1)
+        _Embient ("Embient Color", Color) = (0.1, 0.1, 0.1, 1)
         _DiffuseColor ("DiffuseColor", Color) = (0.1, 0.1, 0.1, 1)
+        _LightIntensity ("lightIntensity", Float) = 2
     }
     SubShader
     {
@@ -39,6 +40,7 @@ Shader "Unlit/FragmentBlinnPhong"
             float4 _MainTex_ST;
             float4 _Embient;
             float4 _DiffuseColor;
+            float _LightIntensity;
 
             v2f vert (appdata v)
             {
@@ -56,11 +58,11 @@ Shader "Unlit/FragmentBlinnPhong"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                float4 diffuse = _DiffuseColor * dot(i.normal, i.lightDir);
+                float4 diffuse = _DiffuseColor * clamp(dot(i.normal, i.lightDir), 0, 1) / 3.14;
                 float3 h = normalize(i.viewDir + i.lightDir);
-                float specular = pow(dot(h, i.normal), 200);
+                float specular = pow(clamp(dot(h, i.normal), 0, 1), 200);
 
-                return diffuse + _Embient + specular; 
+                return diffuse * _LightIntensity + _Embient + specular * _LightIntensity; 
             }
             ENDCG
         }

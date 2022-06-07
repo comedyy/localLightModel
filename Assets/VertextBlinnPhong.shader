@@ -3,8 +3,9 @@ Shader "Unlit/VertextBlinnPhong"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
-        _Embient ("Color", Color) = (0.1, 0.1, 0.1, 1)
+        _Embient ("Embient Color", Color) = (0.1, 0.1, 0.1, 1)
         _DiffuseColor ("DiffuseColor", Color) = (0.1, 0.1, 0.1, 1)
+        _LightIntensity ("lightIntensity", Float) = 2
     }
     SubShader
     {
@@ -38,25 +39,26 @@ Shader "Unlit/VertextBlinnPhong"
             float4 _MainTex_ST;
             float4 _Embient;
             float4 _DiffuseColor;
+            float _LightIntensity;
 
             v2f vert (appdata v)
             {
                 v2f o;
                 o.a = UnityObjectToClipPos(v.vertex);
                 float3 lightDir = normalize(ObjSpaceLightDir(v.vertex));
-                float diffuse = dot(v.normal, lightDir);
-                o.diffuse = diffuse * _DiffuseColor;
+                float diffuse = clamp(dot(v.normal, lightDir), 0, 1);
+                o.diffuse = diffuse * _DiffuseColor / 3.14;
 
                 float3 viewDir = normalize(ObjSpaceViewDir(v.vertex));
                 float3 h = normalize(viewDir + lightDir);
-                o.specular = pow(dot(h, v.normal), 200);
+                o.specular = pow(clamp(dot(h, v.normal), 0, 1), 200);
 
                 return o;
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
-                return float4(i.diffuse + i.specular, 1) + _Embient;
+                return float4(i.diffuse + i.specular, 1) * _LightIntensity + _Embient;
             }
             ENDCG
         }
